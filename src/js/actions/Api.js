@@ -4,19 +4,10 @@
 //   refresh } from './watch_renamed';
 import fetch from 'isomorphic-fetch';
 
-let _host = "";
+let _hostname = window.location.host.replace('3010', '3000')
+let _storagehost = window.location.host.replace('3010', '3040')
 
-if (process.env.NODE_ENV !== 'production') {
-  // Code will be removed from production build.
-  // _host = '192.168.1.101';
-  _host  = '192.168.1.101';
-  // _host = 'in.samarthainfo.com:8888';
-}
-else {
-  _host = window.location.host
-}
-
-/*
+ /*
 Code copied from Grommet V1 grommet/utils/Rest
  */
 
@@ -73,7 +64,6 @@ const _headers = {
   ...headers,
   'X-API-Version': 200
 };
-let _webSocketUrl = undefined;
 
 // XHR still for file upload progress
 import request from 'superagent';
@@ -86,126 +76,46 @@ export let pageSize = 20;
 export let pollingInterval = 2000; // 2s
 export let urlPrefix = '';
 
-// export function configure (options) {
-//   _host = options.host ? `https://${options.host}` : _host;
-//   pageSize = options.pageSize || pageSize;
-//   pollingInterval = options.pollingInterval || pollingInterval;
-//   _webSocketUrl = options.webSocketUrl || _webSocketUrl;
-//   urlPrefix = options.urlPrefix || urlPrefix;
-//
-//   initializeWatching(_webSocketUrl, _get);
-// }
 
-// export function updateHeaders (headers) {
-//   _headers = {..._headers, ...headers};
-//   Rest.setHeaders(headers);///
-// }
+export function getRESTApi(url, request) {
 
-// Internal help/generic functions
+  console.log('URL: ', 'http://' + _hostname + url);
 
-function _get (uri, params = {}) {
-  const options = { method: 'GET', headers: _headers };
-  // prevent IE11 to cache resources by adding a timestamp to query params
-  params[new Date().getTime()] = '';
-  const query = buildQuery(params);
-  return fetch(`${_host}${urlPrefix}${uri}${query}`, options)
-    .then(processStatus)
-    .then(response => response.json());
+  return fetch('http://' + _hostname + url, request);
 }
 
-function _post (uri, dataArg) {
-  const data = (typeof dataArg === 'object') ?
-    JSON.stringify(dataArg) : dataArg;
-  const options = { method: 'POST', headers: _headers, body: data };
-  //console.log('_post: ');
-  //console.log('${_host}${urlPrefix}${uri}');
-  return fetch(`${_host}${urlPrefix}${uri}`, options)
-    .then(processStatus)
-    .then(response => response.json());
+export function postRESTApi(url, reqBody) {
+
+  console.log("postRESTApi: url:", url);
+  console.log("postRESTApi: reqBody:", reqBody);
+
+  let restRequest = {
+    method: "POST",
+    body: JSON.stringify(reqBody),
+    headers: {
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    }
+  };
+
+  console.log('URL: ', 'http://' + _hostname + url);
+  console.log('RESTrEQUEST: ', JSON.stringify(restRequest));
+
+  // return fetch('http://' + _hostname + url, restRequest);
+  return fetch('http://' + _hostname + url, restRequest);
+
 }
 
-function _put (uri, dataArg) {
-  const data = (typeof dataArg === 'object') ?
-    JSON.stringify(dataArg) : dataArg;
-  const options = { method: 'PUT', headers: _headers, body: data };
-  return fetch(`${_host}${urlPrefix}${uri}`, options)
-    .then(processStatus)
-    .then(response => response.json());
+export function getFileBaseURL(bucket) {
+  // The file server is HSStorageManager which is listening on 3040
+  // return 'http://' + _hostname.replace('3000', '3040') + '/rest/';
+  if(bucket != undefined)
+    return 'http://' + _storagehost + '/rest/file/' + bucket + '/';
+  else
+    return 'http://' + _storagehost + '/rest/file/';
 }
 
-function _delete (uri) {
-  //console.log("_delete: uri: ", uri);
-  //console.log("_delete: _host: ", _host);
-  //console.log("_delete: urlPrefix: ", urlPrefix);
-  const options = { method: 'DELETE', headers: _headers };
-  return fetch(`${_host}${urlPrefix}${uri}`, options)
-    .then(response => response.json());
+export function fileServerBaseURL() {
+  return 'http://' + _storagehost + '/rest/';
 }
 
-export function head (url, params) {
-  const query = buildQuery(params);
-  const options = { method: 'HEAD', headers: _headers };
-  return fetch(`${_host}${urlPrefix}${url}${query}`, options);
-}
-
-// Index
-
-export function getItems (params) {
-  return _get('/rest/index/resources', params);
-}
-
-export function  getSearchSuggestions (text) {
-  const params = { start: 0, count: Math.min(10, pageSize), query: text };
-  return _get('/rest/index/search-suggestions', params);
-}
-
-// Item
-
-export function getItem (uri) {
-  return _get(uri);
-}
-
-// export function postItem (item) {
-//   return _post(`/rest/${item.category}`, item).then(refresh);
-// }
-//
-// export function putItem (item) {
-//   return _put(item.uri, item).then(refresh);
-// }
-
-export function deleteItem (uri) {
-  return _delete(uri);
-  // return _delete(uri).then(refresh);
-}
-
-// Watching
-
-
-export function getSoftware () {
-  return _get('/rest/update');
-}
-
-export function postRestart () {
-  return _post('/rest/restart');
-}
-
-export function putImage (image, file, progressHandler, handler) {
-  // We need to keep using Rest until fetch() has a way to track long upload
-  // progress. Since we don't do file uploading from mobile platforms,
-  // we can get away with this.
-  request.put(`${_host}${urlPrefix}${image.uri}`)
-  .timeout(_timeout)
-  .set({ ..._headers, "Content-Type": undefined})
-  .field('uri', image.uri)
-  .field('name', image.name)
-  .field('status', image.status)
-  .field('state', image.state)
-  .field('created', image.created)
-  .attach('file', file)
-  .on('progress', progressHandler)
-  .end(handler);
-}
-
-export function postRoute (route) {
-  return _post(`/rest/route`, route);
-}

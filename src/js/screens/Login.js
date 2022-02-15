@@ -215,7 +215,7 @@ class Login extends Component {
                         pad={{horizontal: 'small', vertical: 'large'}}
                     >
                         <Text size="xxlarge" weight="bold">
-                            BMA Login
+                            HomeServer Login
                         </Text>
                         <Text size="small">
                             v{version.version}

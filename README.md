@@ -1,4 +1,4 @@
-# RedefinIT Bare Metal Automation
+# HomeServer Web UI Client
 
 Python version: 3.6.8
 
